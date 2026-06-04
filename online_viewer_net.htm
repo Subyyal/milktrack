@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MilkTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --cream: #FDF6E3;
+  --cream-dark: #F5EAC8;
+  --milk: #FFFEF9;
+  --brown: #5C3D1E;
+  --brown-light: #8B6340;
+  --brown-dark: #3A2210;
+  --gold: #D4A843;
+  --gold-light: #F0C96A;
+  --green: #2D6A4F;
+  --green-light: #52B788;
+  --red: #C1440E;
+  --text: #2C1810;
+  --text-muted: #7A5C3A;
+  --border: #E8D5B0;
+  --shadow: 0 4px 24px rgba(92,61,30,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(212,168,67,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(45,106,79,0.06) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+.container { max-width: 820px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
+
+/* HEADER */
+header {
+  background: var(--brown);
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.25);
+}
+.header-inner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px;
+  max-width: 820px; margin: 0 auto;
+}
+.logo-icon { font-size: 26px; }
+.logo-text h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px; color: var(--cream); line-height: 1;
+}
+.logo-text span {
+  font-size: 10px; color: rgba(255,255,255,0.45);
+  font-family: 'DM Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase;
+}
+
+/* TABS */
+.tabs {
+  background: var(--brown-dark);
+  display: flex; max-width: 820px; margin: 0 auto; padding: 0 20px; gap: 2px;
+}
+.tab {
+  padding: 10px 18px; font-size: 13px; font-weight: 700;
+  color: rgba(255,255,255,0.45); cursor: pointer;
+  border-bottom: 3px solid transparent; transition: all 0.2s;
+}
+.tab:hover { color: rgba(255,255,255,0.75); }
+.tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+
+/* TAB CONTENT */
+.tab-pane { display: none; padding: 24px 0; }
+.tab-pane.active { display: block; }
+
+/* CARDS */
+.card {
+  background: white; border-radius: 16px;
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  padding: 22px; margin-bottom: 18px;
+}
+.card-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px; color: var(--brown);
+  margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+}
+.card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* STATS */
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+.stat {
+  background: white; border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.stat::before { content:''; position:absolute; top:0;left:0;right:0; height:3px; }
+.stat.gold::before { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+.stat.green::before { background: linear-gradient(90deg, var(--green), var(--green-light)); }
+.stat.brown::before { background: linear-gradient(90deg, var(--brown), var(--brown-light)); }
+.stat-label { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+.stat-value { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--brown); line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* FORM */
+.row { display: grid; gap: 14px; margin-bottom: 14px; }
+.row.c2 { grid-template-columns: 1fr 1fr; }
+.row.c3 { grid-template-columns: 1fr 1fr 1fr; }
+.fg { display: flex; flex-direction: column; gap: 5px; }
+label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase; }
+input, select {
+  padding: 11px 13px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: 'Nunito', sans-serif;
+  font-size: 15px; font-weight: 600; color: var(--text);
+  background: var(--milk); width: 100%;
+  -webkit-appearance: none; appearance: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235C3D1E' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center;
+  padding-right: 34px; cursor: pointer;
+}
+input:focus, select:focus {
+  outline: none; border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212,168,67,0.15);
+}
+
+/* BUTTONS */
+.btn {
+  padding: 11px 22px; border-radius: 10px; border: none;
+  font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800;
+  cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--brown); color: white; box-shadow: 0 4px 12px rgba(92,61,30,0.3); }
+.btn-primary:hover { background: var(--brown-dark); transform: translateY(-1px); }
+.btn-gold { background: var(--gold); color: var(--brown-dark); }
+.btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
+.btn-del { background: none; border: 1.5px solid rgba(193,68,14,0.25); color: var(--red); padding: 5px 11px; font-size: 12px; border-radius: 8px; }
+.btn-del:hover { background: rgba(193,68,14,0.07); border-color: var(--red); }
+.btn-plain { background: var(--cream); border: 1px solid var(--border); color: var(--brown); }
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+
+/* TABLE */
+.tbl-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--brown); }
+thead th { padding: 11px 14px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 1px; text-transform: uppercase; text-align: left; }
+tbody tr { border-bottom: 1px solid var(--cream-dark); transition: background 0.12s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--cream); }
+tbody td { padding: 11px 14px; font-size: 14px; font-weight: 600; color: var(--text); }
+.mono { font-family: 'DM Mono', monospace; font-size: 13px; }
+.badge { display:inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.b2 { background: rgba(212,168,67,0.15); color: #7A5500; }
+.bh { background: rgba(82,183,136,0.15); color: #1a6040; }
+
+/* RATE ITEM */
+.rate-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 15px; background: var(--cream);
+  border-radius: 10px; margin-bottom: 9px; border: 1px solid var(--border);
+}
+.rate-val { font-family: 'DM Serif Display', serif; font-size: 19px; color: var(--brown); }
+.rate-period { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+/* BILL */
+.bill-card {
+  background: var(--brown-dark); border-radius: 16px;
+  padding: 28px; color: white; position: relative; overflow: hidden;
+}
+.bill-card::before {
+  content: '🥛'; position: absolute; right: 18px; top: 14px;
+  font-size: 72px; opacity: 0.06;
+}
+.bill-h { font-family: 'DM Serif Display', serif; font-size: 21px; color: var(--gold-light); }
+.bill-period-txt { font-size: 12px; color: rgba(255,255,255,0.45); margin: 3px 0 22px; font-family: 'DM Mono', monospace; }
+.bill-line {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+  font-size: 14px; color: rgba(255,255,255,0.7);
+}
+.bill-line:last-of-type { border-bottom: none; }
+.bill-qty { font-family: 'DM Mono', monospace; color: var(--gold-light); }
+.bill-amt { font-family: 'DM Mono', monospace; color: white; font-weight: 700; }
+.bill-total {
+  margin-top: 18px; padding-top: 18px;
+  border-top: 2px solid rgba(212,168,67,0.35);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.bill-total-lbl { font-size: 13px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+.bill-total-amt { font-family: 'DM Serif Display', serif; font-size: 34px; color: var(--gold-light); }
+
+/* EMPTY */
+.empty { text-align: center; padding: 44px; color: var(--text-muted); }
+.empty-icon { font-size: 44px; margin-bottom: 10px; opacity: 0.35; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 22px; right: 22px;
+  background: var(--brown-dark); color: white;
+  padding: 13px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999; border-left: 4px solid var(--gold);
+  max-width: 280px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* PRINT */
+@media print {
+  header, .tabs, .tab-pane:not(.active), .btn, .no-print { display: none !important; }
+  body { background: white; }
+  .bill-card { background: white !important; color: black !important; border: 1px solid #ccc; }
+  .bill-h, .bill-total-amt { color: var(--brown) !important; }
+}
+
+@media (max-width: 600px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stat:last-child { grid-column: 1/-1; }
+  .row.c2, .row.c3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-icon">🥛</div>
+    <div class="logo-text">
+      <h1>MilkTrack</h1>
+      <span>Daily Dairy Ledger</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="go('log')">📋 Log</div>
+    <div class="tab" onclick="go('history')">📅 History</div>
+    <div class="tab" onclick="go('bill')">🧾 Bill</div>
+    <div class="tab" onclick="go('rates')">⚙️ Rates</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- LOG -->
+  <div id="pane-log" class="tab-pane active">
+    <div class="stats">
+      <div class="stat gold">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value" id="sMonthKg">0 kg</div>
+        <div class="stat-sub" id="sMonthAmt">₨ 0</div>
+      </div>
+      <div class="stat green">
+        <div class="stat-label">Today</div>
+        <div class="stat-value" id="sToday">—</div>
+        <div class="stat-sub" id="sTodayAmt">Not logged</div>
+      </div>
+      <div class="stat brown">
+        <div class="stat-label">Current Rate</div>
+        <div class="stat-value" id="sRate">—</div>
+        <div class="stat-sub">per kg</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🥛 Add Entry</div>
+      <div class="row c2">
+        <div class="fg"><label>Date</label><input type="date" id="eDate"/></div>
+        <div class="fg">
+          <label>Quantity</label>
+          <select id="eQty">
+            <option value="2">2 kg</option>
+            <option value="0.5">½ kg (500g)</option>
+            <option value="1">1 kg</option>
+            <option value="1.5">1.5 kg</option>
+            <option value="2.5">2.5 kg</option>
+            <option value="3">3 kg</option>
+          </select>
+        </div>
+      </div>
+      <div class="row c2">
+        <div class="fg"><label>Note (optional)</label><input type="text" id="eNote" placeholder="e.g. Morning delivery"/></div>
+        <div class="fg" style="justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="addEntry()" style="width:100%">➕ Log Entry</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Recent</div>
+      <div id="recentList"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="pane-history" class="tab-pane">
+    <div class="card">
+      <div class="card-title">📅 All Entries</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end;">
+        <div class="fg" style="flex:1;min-width:140px;">
+          <label>Filter by Month</label>
+          <input type="month" id="fMonth"/>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="renderHistory()">Filter</button>
+        <button class="btn btn-plain btn-sm" onclick="document.getElementById('fMonth').value='';renderHistory()">Clear</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Note</th><th></th></tr></thead>
+          <tbody id="histTbl"></tbody>
+        </table>
+      </div>
+      <div id="histTotal" style="text-align:right;padding:12px 4px 0;font-size:13px;color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+  <!-- BILL -->
+  <div id="pane-bill" class="tab-pane">
+    <div class="card">
+      <div class="card-title">🧾 Generate Bill</div>
+      <div class="row c3">
+        <div class="fg"><label>From</label><input type="date" id="bFrom"/></div>
+        <div class="fg"><label>To</label><input type="date" id="bTo"/></div>
+        <div class="fg" style="justify-content:flex-end;">
+          <button class="btn btn-primary" style="width:100%" onclick="genBill()">Generate</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" class="no-print">
+        <button class="btn btn-plain btn-sm" onclick="quickPeriod('this')">This Month</button>
+        <button class="btn btn-plain btn-sm" onclick="quickPeriod('last')">Last Month</button>
+        <button class="btn btn-plain btn-sm" onclick="quickPeriod('all')">All Time</button>
+      </div>
+    </div>
+    <div id="billOut"></div>
+  </div>
+
+  <!-- RATES -->
+  <div id="pane-rates" class="tab-pane">
+    <div class="card">
+      <div class="card-title">⚙️ Add Rate Period</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Rate is ₨ per kg. Leave "To" blank for ongoing rate.</p>
+      <div class="row c3">
+        <div class="fg"><label>From Date</label><input type="date" id="rFrom"/></div>
+        <div class="fg"><label>To Date (or leave blank)</label><input type="date" id="rTo"/></div>
+        <div class="fg"><label>Rate ₨/kg</label><input type="number" id="rAmt" placeholder="e.g. 270" min="1"/></div>
+      </div>
+      <button class="btn btn-primary" onclick="addRate()">➕ Save Rate</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Saved Rates</div>
+      <div id="rateList"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const KEY = 'mtv2';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {entries:[],rates:[]}; }
+  catch { return {entries:[],rates:[]}; }
+}
+function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+
+// ── HELPERS ───────────────────────────────────────────
+function fmt(s) {
+  if (!s) return '';
+  return new Date(s + 'T00:00:00').toLocaleDateString('en-PK', {day:'2-digit',month:'short',year:'numeric'});
+}
+function tod() { return new Date().toISOString().split('T')[0]; }
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function rateFor(date, rates) {
+  let best = null;
+  for (const r of rates) {
+    if (r.from <= date && (!r.to || r.to >= date)) {
+      if (!best || r.from > best.from) best = r;
+    }
+  }
+  return best ? best.rate : 0;
+}
+
+// ── ADD ENTRY ─────────────────────────────────────────
+function addEntry() {
+  const date = document.getElementById('eDate').value;
+  const qty  = parseFloat(document.getElementById('eQty').value);
+  const note = document.getElementById('eNote').value.trim();
+  if (!date) { toast('⚠️ Pick a date'); return; }
+  const d = load();
+  const dup = d.entries.find(e => e.date === date);
+  if (dup && !confirm(`Entry for ${fmt(date)} exists (${dup.qty} kg). Add another?`)) return;
+  const rate = rateFor(date, d.rates);
+  d.entries.push({id: Date.now(), date, qty, note, rate});
+  d.entries.sort((a,b) => b.date.localeCompare(a.date));
+  save(d);
+  document.getElementById('eNote').value = '';
+  renderAll();
+  toast(`✅ ${qty} kg on ${fmt(date)}${rate ? ' — ₨' + (qty*rate).toFixed(0) : ''}`);
+}
+
+// ── ADD RATE ──────────────────────────────────────────
+function addRate() {
+  const from = document.getElementById('rFrom').value;
+  const to   = document.getElementById('rTo').value;
+  const rate = parseFloat(document.getElementById('rAmt').value);
+  if (!from || !rate || rate <= 0) { toast('⚠️ Fill From date and Rate'); return; }
+  const d = load();
+  d.rates.push({id: Date.now(), from, to: to||'', rate});
+  d.rates.sort((a,b) => b.from.localeCompare(a.from));
+  save(d);
+  document.getElementById('rFrom').value = '';
+  document.getElementById('rTo').value   = '';
+  document.getElementById('rAmt').value  = '';
+  renderRates();
+  toast(`✅ Rate ₨${rate}/kg from ${fmt(from)}`);
+}
+
+function delRate(id) {
+  if (!confirm('Delete this rate?')) return;
+  const d = load(); d.rates = d.rates.filter(r => r.id !== id); save(d);
+  renderRates(); toast('🗑️ Rate removed');
+}
+
+function delEntry(id) {
+  if (!confirm('Delete entry?')) return;
+  const d = load(); d.entries = d.entries.filter(e => e.id !== id); save(d);
+  renderAll(); toast('🗑️ Entry deleted');
+}
+
+// ── RENDER STATS ──────────────────────────────────────
+function renderStats() {
+  const d = load();
+  const m = new Date().toISOString().slice(0,7);
+  const me = d.entries.filter(e => e.date.startsWith(m));
+  const mq = me.reduce((s,e) => s+e.qty, 0);
+  const mc = me.reduce((s,e) => s+e.qty*e.rate, 0);
+  document.getElementById('sMonthKg').textContent  = mq + ' kg';
+  document.getElementById('sMonthAmt').textContent = '₨ ' + mc.toFixed(0);
+
+  const te = d.entries.find(e => e.date === tod());
+  if (te) {
+    document.getElementById('sToday').textContent    = te.qty + ' kg';
+    document.getElementById('sTodayAmt').textContent = '₨ ' + (te.qty * te.rate).toFixed(0);
+  } else {
+    document.getElementById('sToday').textContent    = '—';
+    document.getElementById('sTodayAmt').textContent = 'Not logged';
+  }
+
+  const cr = rateFor(tod(), d.rates);
+  document.getElementById('sRate').textContent = cr ? '₨ ' + cr : '—';
+}
+
+// ── RENDER RECENT ─────────────────────────────────────
+function renderRecent() {
+  const d = load();
+  const el = document.getElementById('recentList');
+  const rows = d.entries.slice(0,7);
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No entries yet</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Qty</th><th>Rate</th><th>Amount</th><th></th></tr></thead><tbody>' +
+    rows.map(e => `<tr>
+      <td>${fmt(e.date)}</td>
+      <td><span class="badge ${e.qty>=1.5?'b2':'bh'}">${e.qty} kg</span></td>
+      <td class="mono">₨ ${e.rate||'—'}</td>
+      <td class="mono"><strong>₨ ${(e.qty*(e.rate||0)).toFixed(0)}</strong></td>
+      <td><button class="btn btn-del" onclick="delEntry(${e.id})">✕</button></td>
+    </tr>`).join('') + '</tbody></table></div>';
+}
+
+// ── RENDER HISTORY ────────────────────────────────────
+function renderHistory() {
+  const d = load();
+  const fm = document.getElementById('fMonth').value;
+  let rows = fm ? d.entries.filter(e => e.date.startsWith(fm)) : d.entries;
+  const tb = document.getElementById('histTbl');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><p>No entries</p></div></td></tr>';
+    document.getElementById('histTotal').textContent = '';
+    return;
+  }
+  tb.innerHTML = rows.map(e => `<tr>
+    <td>${fmt(e.date)}</td>
+    <td><span class="badge ${e.qty>=1.5?'b2':'bh'}">${e.qty} kg</span></td>
+    <td class="mono">₨ ${e.rate||'—'}</td>
+    <td class="mono"><strong>₨ ${(e.qty*(e.rate||0)).toFixed(0)}</strong></td>
+    <td style="font-size:12px;color:var(--text-muted)">${e.note||''}</td>
+    <td><button class="btn btn-del" onclick="delEntry(${e.id})">✕</button></td>
+  </tr>`).join('');
+  const tq = rows.reduce((s,e)=>s+e.qty,0);
+  const ta = rows.reduce((s,e)=>s+e.qty*(e.rate||0),0);
+  document.getElementById('histTotal').innerHTML =
+    `${rows.length} entries &nbsp;·&nbsp; <strong>${tq} kg</strong> &nbsp;·&nbsp; <strong style="color:var(--brown)">₨ ${ta.toFixed(0)}</strong>`;
+}
+
+// ── RENDER RATES ──────────────────────────────────────
+function renderRates() {
+  const d = load();
+  const el = document.getElementById('rateList');
+  if (!d.rates.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">⚙️</div><p>No rates yet</p></div>';
+    return;
+  }
+  el.innerHTML = d.rates.map(r => `
+    <div class="rate-item">
+      <div>
+        <div class="rate-val">₨ ${r.rate} <span style="font-size:13px;color:var(--text-muted)">/ kg</span></div>
+        <div class="rate-period">${fmt(r.from)} → ${r.to ? fmt(r.to) : 'Ongoing'}</div>
+      </div>
+      <button class="btn btn-del" onclick="delRate(${r.id})">✕ Remove</button>
+    </div>`).join('');
+}
+
+// ── BILL ──────────────────────────────────────────────
+function quickPeriod(p) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  if (p === 'this') {
+    document.getElementById('bFrom').value = `${y}-${String(m+1).padStart(2,'0')}-01`;
+    document.getElementById('bTo').value   = tod();
+  } else if (p === 'last') {
+    document.getElementById('bFrom').value = new Date(y,m-1,1).toISOString().split('T')[0];
+    document.getElementById('bTo').value   = new Date(y,m,0).toISOString().split('T')[0];
+  } else {
+    const d = load();
+    if (d.entries.length) {
+      const dates = d.entries.map(e=>e.date).sort();
+      document.getElementById('bFrom').value = dates[0];
+      document.getElementById('bTo').value   = dates[dates.length-1];
+    }
+  }
+  genBill();
+}
+
+function genBill() {
+  const from = document.getElementById('bFrom').value;
+  const to   = document.getElementById('bTo').value;
+  if (!from || !to) { toast('⚠️ Pick From and To dates'); return; }
+  const d = load();
+  const rows = d.entries.filter(e => e.date >= from && e.date <= to);
+  const el = document.getElementById('billOut');
+  if (!rows.length) {
+    el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">🧾</div><p>No entries in this period</p></div></div>';
+    return;
+  }
+  // group by rate
+  const grp = {};
+  let tq=0, ta=0;
+  for (const e of rows) {
+    const k = e.rate||0;
+    if (!grp[k]) grp[k] = {rate:k, qty:0, amt:0};
+    grp[k].qty += e.qty;
+    grp[k].amt += e.qty*k;
+    tq += e.qty; ta += e.qty*k;
+  }
+  const lines = Object.values(grp).map(g => `
+    <div class="bill-line">
+      <span>${g.qty} kg × ₨${g.rate}/kg</span>
+      <div style="display:flex;gap:18px">
+        <span class="bill-qty">${g.qty} kg</span>
+        <span class="bill-amt">₨ ${g.amt.toFixed(0)}</span>
+      </div>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="bill-card">
+      <div class="bill-h">Milk Purchase Bill</div>
+      <div class="bill-period-txt">${fmt(from)} — ${fmt(to)} · ${rows.length} entries</div>
+      ${lines}
+      <div class="bill-total">
+        <div>
+          <div class="bill-total-lbl">Total Amount</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px">${tq} kg total</div>
+        </div>
+        <div class="bill-total-amt">₨ ${ta.toFixed(0)}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px;" class="no-print">
+      <button class="btn btn-gold" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-plain" onclick="navigator.clipboard.writeText('Milk Bill\\n${fmt(from)} – ${fmt(to)}\\n${rows.length} entries | ${tq}kg\\nTotal: PKR ${ta.toFixed(0)}').then(()=>toast('📋 Copied!'))">📋 Copy</button>
+    </div>`;
+}
+
+// ── TAB SWITCH ────────────────────────────────────────
+function go(name) {
+  ['log','history','bill','rates'].forEach((n,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', n===name);
+    document.getElementById('pane-'+n).classList.toggle('active', n===name);
+  });
+  if (name==='history') renderHistory();
+  if (name==='bill') {
+    if (!document.getElementById('bFrom').value) quickPeriod('this');
+  }
+}
+
+function renderAll() { renderStats(); renderRecent(); }
+
+// ── INIT ──────────────────────────────────────────────
+function init() {
+  document.getElementById('eDate').value = tod();
+  const d = load();
+  if (!d.rates.length) {
+    d.rates = [
+      {id:1, from:'2025-05-03', to:'2025-05-31', rate:250},
+      {id:2, from:'2025-06-01', to:'',           rate:270}
+    ];
+    save(d);
+  }
+  renderAll();
+  renderRates();
+}
+
+init();
+</script>
+</body>
+</html>
