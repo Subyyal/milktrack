@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Milk Bill Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --card2:#f0f2f5; --accent:#1897c9; --accent2:#1a9c5a;
+    --accent3:#e0a72e; --accent4:#8b5cf6; --text:#1c2733; --muted:#6b7684; --border:#e1e5ea; --danger:#d3413a;
+    --navh:64px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:linear-gradient(160deg,#eef1f5,#f7f9fb 60%,#eef1f5);
+    color:var(--text); min-height:100vh;
+    padding-bottom:calc(var(--navh) + 20px);
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:16px 14px calc(var(--navh) + 70px);}
+  header.top{
+    position:sticky; top:0; z-index:5; backdrop-filter:blur(6px);
+    background:linear-gradient(135deg, rgba(24,151,201,.10), rgba(139,92,246,.08));
+    padding:14px 14px 10px; border-bottom:1px solid var(--border);
+  }
+  header.top .inner{max-width:520px; margin:0 auto; display:flex; align-items:center; justify-content:space-between;}
+  h1{font-size:1.15rem; margin:0; display:flex; align-items:center; gap:8px;}
+  .page-title{font-size:.95rem; color:var(--muted); margin:2px 0 0;}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-left:3px solid var(--accent);
+    border-radius:14px 16px 16px 14px;
+    padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(20,30,40,.06);
+  }
+  .card.accent-green{border-left-color:var(--accent2);}
+  .card.accent-amber{border-left-color:var(--accent3);}
+  .card.accent-purple{border-left-color:var(--accent4);}
+  .card.accent-red{border-left-color:var(--danger);}
+  .card h2{font-size:.95rem; margin:0 0 12px; color:var(--text); display:flex; align-items:center; gap:6px; font-weight:700;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+  .field{flex:1; min-width:130px; display:flex; flex-direction:column; gap:4px;}
+  label{font-size:.72rem; color:var(--muted);}
+  input, select{
+    background:var(--card2); border:1px solid var(--border); color:var(--text);
+    padding:11px 10px; border-radius:10px; font-size:1rem; outline:none; width:100%;
+  }
+  input:focus, select:focus{border-color:var(--accent);}
+  button{
+    background:var(--accent); color:#ffffff; border:none; padding:12px 16px;
+    border-radius:10px; font-weight:600; cursor:pointer; font-size:.9rem; width:100%;
+  }
+  button.secondary{background:var(--card2); color:var(--text); border:1px solid var(--border);}
+  button.danger-outline{background:transparent; color:var(--danger); border:1px solid var(--danger);}
+  button.icon-btn{width:auto; padding:6px 10px; font-size:.75rem; background:transparent; color:var(--danger); border:1px solid var(--danger);}
+  button:active{filter:brightness(1.15);}
+
+  table{width:100%; border-collapse:collapse; font-size:.78rem;}
+  th, td{padding:6px 5px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap;}
+  th{color:var(--muted); font-weight:600; font-size:.62rem; text-transform:uppercase;}
+  .table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .entries-scroll{max-height:46vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border-radius:10px;}
+  .entries-scroll table thead th{position:sticky; top:0; background:var(--card); z-index:1;}
+  .empty{color:var(--muted); font-size:.85rem; text-align:center; padding:18px 0;}
+
+  .totals{display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;}
+  .totals .amt{font-size:1.5rem; font-weight:700; color:var(--accent2);}
+  .rate-tag{
+    display:inline-block; background:var(--card2); border:1px solid var(--border);
+    padding:4px 10px; border-radius:999px; font-size:.72rem; color:var(--muted);
+  }
+  .hint{font-size:.72rem; color:var(--muted); margin-top:6px;}
+
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+  .stat-box{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:14px; text-align:left; box-shadow:0 1px 3px rgba(20,30,40,.06);
+  }
+  .stat-box .label{font-size:.7rem; color:var(--muted); text-transform:uppercase; margin-bottom:6px;}
+  .stat-box .value{font-size:1.25rem; font-weight:700;}
+  .stat-box.green .value{color:var(--accent2);}
+  .stat-box.blue .value{color:var(--accent);}
+
+  /* Tab pages */
+  .page{display:none;}
+  .page.active{display:block;}
+
+  /* Bottom nav - Instagram style */
+  nav.bottom-nav{
+    position:fixed; bottom:0; left:0; right:0; z-index:10;
+    background:rgba(255,255,255,.97); border-top:1px solid var(--border);
+    display:flex; justify-content:space-around; align-items:center;
+    height:var(--navh); padding-bottom:env(safe-area-inset-bottom);
+    backdrop-filter:blur(8px);
+  }
+  nav.bottom-nav button.navbtn{
+    background:none; border:none; color:var(--muted); width:auto;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:.65rem; padding:6px 14px; flex:1; border-radius:14px; margin:0 4px;
+    transition:background .15s, color .15s;
+  }
+  nav.bottom-nav button.navbtn .ic{font-size:1.3rem; line-height:1;}
+  nav.bottom-nav button.navbtn.active{color:var(--accent); background:rgba(24,151,201,.10);}
+
+  .fab{
+    position:fixed; right:18px; bottom:calc(var(--navh) + 16px); z-index:9;
+    width:56px; height:56px; border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), var(--accent4));
+    color:#ffffff; font-size:1.6rem; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 18px rgba(24,151,201,.4); border:none;
+  }
+  .qty-chip{
+    display:inline-block; padding:1px 6px; border-radius:999px; font-size:.68rem; font-weight:700;
+  }
+  .qty-chip.q05{background:rgba(224,167,46,.15); color:#a97c14;}
+  .qty-chip.q1{background:rgba(24,151,201,.15); color:#0f6f94;}
+  .qty-chip.q2{background:rgba(26,156,90,.15); color:#137a45;}
+  .qty-chip.qc{background:rgba(139,92,246,.15); color:#6d3fd6;}
+  button.icon-btn{width:auto; padding:3px 7px; font-size:.68rem; background:transparent; color:var(--danger); border:1px solid var(--danger); border-radius:6px;}
+
+  .sheet-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:20;
+    align-items:flex-end; justify-content:center;
+  }
+  .sheet-overlay.open{display:flex;}
+  .sheet{
+    background:var(--card); width:100%; max-width:520px; border-radius:20px 20px 0 0;
+    padding:18px 16px calc(env(safe-area-inset-bottom) + 18px); border:1px solid var(--border); border-bottom:none;
+    max-height:85vh; overflow-y:auto;
+  }
+  .sheet-handle{width:40px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 14px;}
+  .sheet-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .sheet-header h2{margin:0;}
+  .close-btn{background:none; border:none; color:var(--muted); font-size:1.3rem; width:auto; padding:0;}
+
+  .segmented{display:flex; background:var(--card2); border-radius:10px; padding:3px; margin-bottom:10px;}
+  .segmented button{flex:1; background:none; color:var(--muted); padding:8px; font-size:.8rem; border-radius:8px;}
+  .segmented button.active{background:var(--accent); color:#ffffff;}
+
+  canvas{max-width:100%;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="inner">
+    <h1>🥛 Milk Bill</h1>
+    <span class="rate-tag" id="headerTotal">Rs. 0.00</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- HOME / ENTRIES -->
+  <section class="page active" id="page-home">
+    <div class="card" style="padding-bottom:12px;">
+      <div class="row" style="margin-bottom:0; align-items:center;">
+        <button class="secondary" style="width:auto; padding:8px 12px;" onclick="shiftMonth(-1)">‹</button>
+        <div class="field" style="flex:2;">
+          <input type="month" id="monthPicker">
+        </div>
+        <button class="secondary" style="width:auto; padding:8px 12px;" onclick="shiftMonth(1)">›</button>
+      </div>
+    </div>
+
+    <div class="card accent-green" style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:linear-gradient(135deg, rgba(26,156,90,.06), var(--card));">
+      <div>
+        <div class="label" style="font-size:.7rem; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">This Month</div>
+        <div style="font-size:.85rem; color:var(--muted);"><span id="statCount">0</span> entries</div>
+      </div>
+      <div class="amt" id="statTotal" style="font-size:1.4rem;">Rs. 0</div>
+    </div>
+
+    <div class="card" style="padding:12px 14px;">
+      <h2 style="margin-bottom:8px; font-size:.85rem;">📋 Entries</h2>
+      <div class="table-scroll entries-scroll">
+        <table>
+          <thead><tr><th>Date</th><th>Qty</th><th>Rate</th><th>Amount</th><th></th></tr></thead>
+          <tbody id="entryTableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="entryEmpty" style="display:none; padding:12px 0; font-size:.8rem;">No entries yet. Tap + to add one.</div>
+    </div>
+  </section>
+
+  <!-- RATES -->
+  <section class="page" id="page-rates">
+    <div class="card accent-amber">
+      <details>
+        <summary style="cursor:pointer; font-size:.95rem; color:var(--accent); font-weight:600;">➕ Add Rate Period</summary>
+        <div style="margin-top:14px;">
+          <div class="row">
+            <div class="field">
+              <label>From date</label>
+              <input type="date" id="rateFrom">
+            </div>
+            <div class="field">
+              <label>To date</label>
+              <input type="date" id="rateTo">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Rate per kg</label>
+              <input type="number" id="rateValue" step="0.01" placeholder="e.g. 270">
+            </div>
+          </div>
+          <button onclick="addRatePeriod()">Add Rate Period</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Current Periods</h2>
+      <div class="table-scroll">
+        <table id="rateTable">
+          <thead><tr><th>From</th><th>To</th><th>/kg</th><th>Half kg</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="rateEmpty" style="display:none;">No rate periods added yet.</div>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="page" id="page-summary">
+    <div class="card accent-purple">
+      <h2>📅 Bill Summary</h2>
+      <div class="row">
+        <div class="field">
+          <label>From</label>
+          <input type="date" id="summaryFrom">
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="date" id="summaryTo">
+        </div>
+      </div>
+      <div class="segmented" id="groupBySeg">
+        <button data-val="daily">Daily</button>
+        <button data-val="weekly">Weekly</button>
+        <button data-val="monthly" class="active">Monthly</button>
+      </div>
+      <button class="secondary" onclick="renderSummary()">Apply Range</button>
+      <div class="totals">
+        <span class="rate-tag" id="summaryRangeLabel">All time</span>
+        <span class="amt" id="summaryTotalAmt">Rs. 0.00</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Breakdown</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th id="periodColHead">Period</th><th>Qty</th><th>Amount</th></tr></thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="summaryEmpty" style="display:none;">No entries in this range.</div>
+    </div>
+
+    <div class="card accent-green">
+      <h2>📊 Amount by Period</h2>
+      <canvas id="amountChart" height="200"></canvas>
+    </div>
+    <div class="card accent-purple">
+      <h2>🥛 Quantity Breakdown</h2>
+      <canvas id="qtyChart" height="200"></canvas>
+    </div>
+  </section>
+
+  <!-- DATA -->
+  <section class="page" id="page-data">
+    <div class="card accent-amber">
+      <details open>
+        <summary style="cursor:pointer; font-size:.95rem; color:var(--accent3); font-weight:700;">📥 Bulk Add Entries</summary>
+        <div style="margin-top:14px;">
+          <div class="hint" style="margin-bottom:10px;">Paste a list alternating day number and quantity (e.g. "1", "1 kg", "2", "½ kg" ...). Use "Skip" or "No milk" to skip a day.</div>
+          <div class="row">
+            <div class="field">
+              <label>Month</label>
+              <select id="bulkMonth"></select>
+            </div>
+            <div class="field">
+              <label>Year</label>
+              <input type="number" id="bulkYear" value="2026">
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:10px;">
+            <label>Paste list</label>
+            <textarea id="bulkText" rows="6" placeholder="1&#10;1 kg&#10;2&#10;½ kg&#10;3&#10;Skip" style="background:var(--card2); border:1px solid var(--border); color:var(--text); padding:10px; border-radius:10px; font-size:.85rem; font-family:inherit; width:100%; resize:vertical;"></textarea>
+          </div>
+          <button onclick="bulkAddEntries()">Add All Entries</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="card accent-purple">
+      <details>
+        <summary style="cursor:pointer; font-size:.95rem; color:var(--accent4); font-weight:700;">🛠 Fix & Maintain</summary>
+        <div style="margin-top:14px;">
+          <div class="hint" style="margin-bottom:8px;">Re-applies current rate periods to all entries. Use after adding/editing rate periods.</div>
+          <div class="row"><button class="secondary" onclick="recalculateAll()">Recalculate All Entries</button></div>
+          <div class="hint" style="margin:12px 0 8px;">Checks for and merges any entries that ended up with the same date.</div>
+          <div class="row"><button class="secondary" onclick="checkDuplicates()">Check for Duplicate Dates</button></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary style="cursor:pointer; font-size:.95rem; color:var(--accent); font-weight:600;">⬇ Export / Import</summary>
+        <div style="margin-top:14px;">
+          <div class="row"><button onclick="exportJSON()">Export JSON</button></div>
+          <div class="row">
+            <input type="file" id="importFile" accept="application/json" style="display:none;" onchange="importJSON(event)">
+            <button class="secondary" onclick="document.getElementById('importFile').click()">Import JSON (merge)</button>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card accent-red">
+      <details>
+        <summary style="cursor:pointer; font-size:.95rem; color:var(--danger); font-weight:700;">⚠ Danger Zone</summary>
+        <div style="margin-top:14px;">
+          <button class="danger-outline" onclick="clearAll()">Clear All Data</button>
+        </div>
+      </details>
+    </div>
+  </section>
+
+</div>
+
+<!-- FAB to add entry -->
+<button class="fab" onclick="openAddSheet()">+</button>
+
+<!-- Add entry bottom sheet -->
+<div class="sheet-overlay" id="addSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2 id="sheetTitle">Add Daily Entry</h2>
+      <button class="close-btn" onclick="closeAddSheet()">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>Date</label>
+      <input type="date" id="entryDate">
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>Quantity (kg)</label>
+      <select id="qtySelect" onchange="toggleCustomQty()">
+        <option value="0.5">Half kg (0.5)</option>
+        <option value="1" selected>1 kg</option>
+        <option value="2">2 kg</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </div>
+    <div class="field" id="customQtyWrap" style="display:none; margin-bottom:10px;">
+      <label>Custom quantity (kg)</label>
+      <input type="number" id="customQty" step="0.01" placeholder="e.g. 1.5">
+    </div>
+    <div class="hint" id="rateForDateHint"></div>
+    <div style="margin-top:14px; display:flex; gap:10px;">
+      <button onclick="addEntry()" id="sheetSaveBtn">Add Entry</button>
+      <button class="danger-outline" id="sheetDeleteBtn" style="display:none; width:auto; padding:12px 18px;" onclick="deleteFromSheet()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="navbtn active" data-page="home" onclick="showPage('home')">
+    <span class="ic">🏠</span><span>Home</span>
+  </button>
+  <button class="navbtn" data-page="rates" onclick="showPage('rates')">
+    <span class="ic">💰</span><span>Rates</span>
+  </button>
+  <button class="navbtn" data-page="summary" onclick="showPage('summary')">
+    <span class="ic">📊</span><span>Summary</span>
+  </button>
+  <button class="navbtn" data-page="data" onclick="showPage('data')">
+    <span class="ic">⚙️</span><span>Data</span>
+  </button>
+</nav>
+
+<script>
+const STORAGE_KEY = 'milkBillTracker_v1';
+let data = { ratePeriods: [], entries: [] };
+let currentGroupBy = 'monthly';
+let selectedMonth = null; // 'YYYY-MM'
+let editOriginalDate = null; // set when editing an existing entry, null when adding new
+
+function currentMonthStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function shiftMonth(delta){
+  const [y, m] = selectedMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  selectedMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('monthPicker').value = selectedMonth;
+  render();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const picker = document.getElementById('monthPicker');
+  picker.addEventListener('change', () => {
+    selectedMonth = picker.value || currentMonthStr();
+    render();
+  });
+});
+
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{ data = JSON.parse(raw); }catch(e){ data = { ratePeriods: [], entries: [] }; }
+  }
+  if(!data.ratePeriods) data.ratePeriods = [];
+  if(!data.entries) data.entries = [];
+  dedupeEntries();
+}
+function dedupeEntries(){
+  // Merge any duplicate-date entries (keeps the last one). This can only
+  // happen from corrupted/old data, never from normal use of this version.
+  const map = new Map();
+  data.entries.forEach(e => map.set(e.date, e));
+  const before = data.entries.length;
+  data.entries = Array.from(map.values()).sort((a,b)=> a.date.localeCompare(b.date));
+  const removed = before - data.entries.length;
+  if(removed > 0){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    console.warn(`Removed ${removed} duplicate-date entr${removed===1?'y':'ies'}.`);
+  }
+  return removed;
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  render();
+  renderSummary();
+}
+function round2(n){ return Math.round(n * 100) / 100; }
+
+// ---- Navigation ----
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.page === name));
+  window.scrollTo({top:0, behavior:'instant'});
+}
+function openAddSheet(){
+  const dateInput = document.getElementById('entryDate');
+  if(!dateInput.value){
+    const today = new Date();
+    const todayMonth = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+    dateInput.value = (selectedMonth === todayMonth)
+      ? today.toISOString().slice(0,10)
+      : `${selectedMonth}-01`;
+  }
+  document.getElementById('addSheet').classList.add('open');
+}
+function editEntry(idx){
+  const e = data.entries[idx];
+  editOriginalDate = e.date;
+  document.getElementById('entryDate').value = e.date;
+  if(e.qty === 0.5 || e.qty === 1 || e.qty === 2){
+    document.getElementById('qtySelect').value = String(e.qty);
+    document.getElementById('customQtyWrap').style.display = 'none';
+  } else {
+    document.getElementById('qtySelect').value = 'custom';
+    document.getElementById('customQty').value = e.qty;
+    document.getElementById('customQtyWrap').style.display = 'flex';
+  }
+  document.getElementById('sheetTitle').textContent = 'Edit Entry';
+  document.getElementById('sheetSaveBtn').textContent = 'Save Changes';
+  document.getElementById('sheetDeleteBtn').style.display = 'block';
+  document.getElementById('rateForDateHint').textContent =
+    `Current rate: Rs. ${e.rate.toFixed(2)}/kg`;
+  document.getElementById('addSheet').classList.add('open');
+}
+function deleteFromSheet(){
+  if(editOriginalDate === null) return;
+  const idx = data.entries.findIndex(x => x.date === editOriginalDate);
+  if(idx >= 0 && confirm(`Delete entry for ${editOriginalDate}?`)){
+    data.entries.splice(idx, 1);
+    save();
+    closeAddSheet();
+  }
+}
+function closeAddSheet(){
+  document.getElementById('addSheet').classList.remove('open');
+  // Fully reset the form so stale values can never leak into the next entry
+  document.getElementById('entryDate').value = '';
+  document.getElementById('qtySelect').value = '1';
+  document.getElementById('customQty').value = '';
+  document.getElementById('customQtyWrap').style.display = 'none';
+  document.getElementById('rateForDateHint').textContent = '';
+  document.getElementById('sheetTitle').textContent = 'Add Daily Entry';
+  document.getElementById('sheetSaveBtn').textContent = 'Add Entry';
+  document.getElementById('sheetDeleteBtn').style.display = 'none';
+  editOriginalDate = null;
+}
+document.getElementById('addSheet').addEventListener('click', (e) => {
+  if(e.target.id === 'addSheet') closeAddSheet();
+});
+
+function toggleCustomQty(){
+  const sel = document.getElementById('qtySelect').value;
+  document.getElementById('customQtyWrap').style.display = sel === 'custom' ? 'flex' : 'none';
+}
+
+function findRateForDate(dateStr){
+  // String comparison on ISO dates (YYYY-MM-DD) is safe and avoids timezone
+  // shifting issues that Date object comparisons can introduce.
+  const matches = data.ratePeriods.filter(p => dateStr >= p.from && dateStr <= p.to);
+  if(matches.length === 0) return null;
+  // If periods overlap for this date, the most recently-starting period wins
+  // (treated as the correction/override for that date).
+  matches.sort((a, b) => b.from.localeCompare(a.from));
+  return matches[0].rate;
+}
+
+function periodsOverlap(aFrom, aTo, bFrom, bTo){
+  return aFrom <= bTo && bFrom <= aTo;
+}
+
+function addRatePeriod(){
+  const from = document.getElementById('rateFrom').value;
+  const to = document.getElementById('rateTo').value;
+  const rate = parseFloat(document.getElementById('rateValue').value);
+  if(!from || !to || isNaN(rate)){
+    alert('Please fill from date, to date, and a valid rate.');
+    return;
+  }
+  if(from > to){
+    alert('"From" date must be before "To" date.');
+    return;
+  }
+  const overlapping = data.ratePeriods.filter(p => periodsOverlap(from, to, p.from, p.to));
+  if(overlapping.length){
+    const list = overlapping.map(p => `${p.from} to ${p.to} @ ${p.rate}/kg`).join('\n');
+    const proceed = confirm(
+      `This range overlaps with an existing period:\n${list}\n\n` +
+      `For overlapping dates, this new period (rate ${rate}) will take priority. Continue?`
+    );
+    if(!proceed) return;
+  }
+  data.ratePeriods.push({ from, to, rate });
+  data.ratePeriods.sort((a,b)=> a.from.localeCompare(b.from));
+  document.getElementById('rateFrom').value = '';
+  document.getElementById('rateTo').value = '';
+  document.getElementById('rateValue').value = '';
+  save();
+}
+function deleteRatePeriod(idx){
+  data.ratePeriods.splice(idx,1);
+  save();
+}
+
+function addEntry(){
+  const date = document.getElementById('entryDate').value;
+  if(!date){ alert('Please pick a date.'); return; }
+  const sel = document.getElementById('qtySelect').value;
+  let qty;
+  if(sel === 'custom'){
+    qty = parseFloat(document.getElementById('customQty').value);
+    if(isNaN(qty) || qty <= 0){ alert('Enter a valid custom quantity.'); return; }
+  } else {
+    qty = parseFloat(sel);
+  }
+  const rate = findRateForDate(date);
+  if(rate === null){
+    alert('No rate period covers this date. Add one in the Rates tab first.');
+    return;
+  }
+  const existing = data.entries.find(e => e.date === date);
+  const isEditingThisSameDate = editOriginalDate !== null && editOriginalDate === date;
+  if(existing && !isEditingThisSameDate){
+    const proceed = confirm(`An entry already exists for ${date} (${existing.qty}kg, Rs.${existing.amount.toFixed(2)}). Replace it?`);
+    if(!proceed) return;
+  }
+  // If editing and the date changed, remove the old entry first
+  if(editOriginalDate !== null && editOriginalDate !== date){
+    const oldIdx = data.entries.findIndex(e => e.date === editOriginalDate);
+    if(oldIdx >= 0) data.entries.splice(oldIdx, 1);
+  }
+  upsertEntry(date, qty, rate);
+  data.entries.sort((a,b)=> a.date.localeCompare(b.date));
+  save();
+  closeAddSheet();
+}
+function deleteEntry(idx){
+  data.entries.splice(idx,1);
+  save();
+}
+
+function render(){
+  const rateBody = document.querySelector('#rateTable tbody');
+  rateBody.innerHTML = '';
+  document.getElementById('rateEmpty').style.display = data.ratePeriods.length ? 'none' : 'block';
+  data.ratePeriods.forEach((p, idx) => {
+    const half = round2(p.rate / 2);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.from}</td><td>${p.to}</td><td>${p.rate.toFixed(2)}</td><td>${half.toFixed(2)}</td>
+      <td><button class="icon-btn" onclick="deleteRatePeriod(${idx})">✕</button></td>`;
+    rateBody.appendChild(tr);
+  });
+
+  // Home always shows exactly the selected month — never a mix of months
+  const visibleEntries = data.entries.filter(e => e.date.startsWith(selectedMonth));
+
+  const entryBody = document.getElementById('entryTableBody');
+  entryBody.innerHTML = '';
+  document.getElementById('entryEmpty').style.display = visibleEntries.length ? 'none' : 'block';
+  let total = 0;
+  visibleEntries.forEach((e) => {
+    total += e.amount;
+    const realIdx = data.entries.indexOf(e);
+    const tr = document.createElement('tr');
+    const chipClass = e.qty === 0.5 ? 'q05' : e.qty === 1 ? 'q1' : e.qty === 2 ? 'q2' : 'qc';
+    tr.innerHTML = `<td>${e.date}</td><td><span class="qty-chip ${chipClass}">${e.qty} kg</span></td><td>${e.rate.toFixed(2)}</td><td style="color:var(--accent2); font-weight:700;">Rs.${e.amount.toFixed(2)}</td>
+      <td style="white-space:nowrap;">
+        <button class="icon-btn" style="color:var(--accent); border-color:var(--accent); margin-right:4px;" onclick="editEntry(${realIdx})">✎</button>
+        <button class="icon-btn" onclick="deleteEntry(${realIdx})">✕</button>
+      </td>`;
+    entryBody.appendChild(tr);
+  });
+  const t = round2(total);
+  document.getElementById('statCount').textContent = visibleEntries.length;
+  document.getElementById('statTotal').textContent = `Rs. ${t.toFixed(2)}`;
+
+  // Header always shows the grand total across all months
+  const grandTotal = round2(data.entries.reduce((s,e)=>s+e.amount,0));
+  document.getElementById('headerTotal').textContent = `Rs. ${grandTotal.toFixed(2)}`;
+}
+
+document.getElementById('entryDate').addEventListener('change', () => {
+  const date = document.getElementById('entryDate').value;
+  const rate = date ? findRateForDate(date) : null;
+  const hint = document.getElementById('rateForDateHint');
+  if(!date){ hint.textContent = ''; return; }
+  hint.textContent = rate !== null
+    ? `Rate for ${date}: Rs. ${rate.toFixed(2)}/kg (half kg = Rs. ${round2(rate/2).toFixed(2)})`
+    : `No rate period covers ${date} yet — add one in Rates tab.`;
+});
+
+function exportJSON(){
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    ...data,
+    totalAmount: round2(data.entries.reduce((s,e)=>s+e.amount,0))
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `milk-bill-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const imported = JSON.parse(e.target.result);
+      (imported.ratePeriods || []).forEach(p => {
+        const exists = data.ratePeriods.some(x => x.from === p.from && x.to === p.to && x.rate === p.rate);
+        if(!exists) data.ratePeriods.push(p);
+      });
+      data.ratePeriods.sort((a,b)=> a.from.localeCompare(b.from));
+      (imported.entries || []).forEach(e => upsertEntry(e.date, e.qty, e.rate));
+      save();
+      alert('Data imported and merged successfully.');
+    }catch(err){
+      alert('Invalid JSON file.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+function populateBulkMonths(){
+  const sel = document.getElementById('bulkMonth');
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  sel.innerHTML = months.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+  sel.value = new Date().getMonth() + 1;
+}
+
+function parseQtyToken(token){
+  const t = token.trim().toLowerCase();
+  if(/no milk|skip|off|absent/.test(t)) return null;
+  if(t.includes('½') || t.includes('1/2') || t.includes('half')) return 0.5;
+  const m = t.match(/[\d.]+/);
+  if(m) return parseFloat(m[0]);
+  return null;
+}
+
+function upsertEntry(date, qty, rate){
+  const amount = round2(qty * rate);
+  const idx = data.entries.findIndex(e => e.date === date);
+  if(idx >= 0){
+    data.entries[idx] = { date, qty, rate, amount };
+  } else {
+    data.entries.push({ date, qty, rate, amount });
+  }
+}
+
+function bulkAddEntries(){
+  const month = parseInt(document.getElementById('bulkMonth').value);
+  const year = parseInt(document.getElementById('bulkYear').value);
+  const raw = document.getElementById('bulkText').value;
+  if(!year || !month){ alert('Please set a valid month and year.'); return; }
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length);
+  if(!lines.length){ alert('Paste a list first.'); return; }
+
+  let added = 0, skipped = 0, noRate = 0;
+  const noRateDates = [];
+  let i = 0;
+  while(i < lines.length){
+    const dayMatch = lines[i].match(/^(\d{1,2})/);
+    if(!dayMatch){ i++; continue; } // not a day line, skip forward
+    const day = parseInt(dayMatch[1]);
+    i++;
+    if(i >= lines.length) break;
+    const qtyToken = lines[i];
+    i++;
+    const qty = parseQtyToken(qtyToken);
+    const date = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    if(qty === null){ skipped++; continue; } // "No milk / Skip" day
+    const rate = findRateForDate(date);
+    if(rate === null){ noRate++; noRateDates.push(date); continue; }
+    upsertEntry(date, qty, rate);
+    added++;
+  }
+
+  save();
+  document.getElementById('bulkText').value = '';
+  let msg = `Added/updated ${added} entr${added===1?'y':'ies'}.`;
+  if(skipped) msg += ` ${skipped} day(s) skipped (no milk).`;
+  if(noRate) msg += ` ${noRate} day(s) had no matching rate period: ${noRateDates.join(', ')} — add a rate period covering these dates, then try again.`;
+  alert(msg);
+}
+
+function recalculateAll(){
+  let changed = 0;
+  let missing = 0;
+  data.entries.forEach(e => {
+    const rate = findRateForDate(e.date);
+    if(rate === null){ missing++; return; }
+    if(rate !== e.rate){ changed++; }
+    e.rate = rate;
+    e.amount = round2(e.qty * rate);
+  });
+  save();
+  let msg = `Recalculated. ${changed} entr${changed===1?'y':'ies'} updated.`;
+  if(missing) msg += ` ${missing} entr${missing===1?'y':'ies'} have no matching rate period.`;
+  alert(msg);
+}
+
+function checkDuplicates(){
+  const removed = dedupeEntries();
+  render();
+  renderSummary();
+  alert(removed > 0
+    ? `Found and merged ${removed} duplicate-date entr${removed===1?'y':'ies'}.`
+    : 'No duplicate dates found — your entries are clean.');
+}
+
+function clearAll(){
+  if(confirm('This will delete all rate periods and entries. Continue?')){
+    data = { ratePeriods: [], entries: [] };
+    save();
+  }
+}
+
+// ---- Summary / Charts ----
+let amountChartInstance = null;
+let qtyChartInstance = null;
+
+document.getElementById('groupBySeg').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  currentGroupBy = btn.dataset.val;
+  document.querySelectorAll('#groupBySeg button').forEach(b => b.classList.toggle('active', b === btn));
+  renderSummary();
+});
+
+function isoWeekLabel(d){
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+}
+function monthLabel(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function getFilteredEntries(){
+  const from = document.getElementById('summaryFrom').value;
+  const to = document.getElementById('summaryTo').value;
+  return data.entries.filter(e => {
+    if(from && e.date < from) return false;
+    if(to && e.date > to) return false;
+    return true;
+  });
+}
+
+function renderSummary(){
+  const entries = getFilteredEntries();
+  const groupBy = currentGroupBy;
+  const from = document.getElementById('summaryFrom').value;
+  const to = document.getElementById('summaryTo').value;
+
+  document.getElementById('summaryRangeLabel').textContent =
+    (from || to) ? `${from || '…'} to ${to || '…'}` : 'All time';
+
+  const groups = {};
+  entries.forEach(e => {
+    const d = new Date(e.date);
+    let label;
+    if(groupBy === 'daily') label = e.date;
+    else if(groupBy === 'weekly') label = isoWeekLabel(d);
+    else label = monthLabel(d);
+    if(!groups[label]) groups[label] = { qty: 0, amount: 0 };
+    groups[label].qty += e.qty;
+    groups[label].amount += e.amount;
+  });
+
+  const labels = Object.keys(groups).sort();
+  const tbody = document.getElementById('summaryTableBody');
+  tbody.innerHTML = '';
+  document.getElementById('periodColHead').textContent =
+    groupBy === 'daily' ? 'Date' : groupBy === 'weekly' ? 'Week' : 'Month';
+  document.getElementById('summaryEmpty').style.display = labels.length ? 'none' : 'block';
+
+  let totalAmount = 0;
+  labels.forEach(l => {
+    const g = groups[l];
+    totalAmount += g.amount;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${l}</td><td>${round2(g.qty)}</td><td>Rs.${round2(g.amount).toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('summaryTotalAmt').textContent = `Rs. ${round2(totalAmount).toFixed(2)}`;
+
+  const ctx1 = document.getElementById('amountChart');
+  if(amountChartInstance) amountChartInstance.destroy();
+  amountChartInstance = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Amount (Rs.)',
+        data: labels.map(l => round2(groups[l].amount)),
+        backgroundColor: '#1897c9',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7684', maxRotation: 45, minRotation: 0 }, grid: { color: '#e1e5ea' } },
+        y: { ticks: { color: '#6b7684' }, grid: { color: '#e1e5ea' }, beginAtZero: true }
+      }
+    }
+  });
+
+  const buckets = { 'Half kg': 0, '1 kg': 0, '2 kg': 0, 'Custom': 0 };
+  entries.forEach(e => {
+    if(e.qty === 0.5) buckets['Half kg'] += e.qty;
+    else if(e.qty === 1) buckets['1 kg'] += e.qty;
+    else if(e.qty === 2) buckets['2 kg'] += e.qty;
+    else buckets['Custom'] += e.qty;
+  });
+  const ctx2 = document.getElementById('qtyChart');
+  if(qtyChartInstance) qtyChartInstance.destroy();
+  qtyChartInstance = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{
+        data: Object.values(buckets).map(v => round2(v)),
+        backgroundColor: ['#1897c9', '#1a9c5a', '#e0a72e', '#d3413a']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { color: '#1c2733', boxWidth:12, padding:14 } } }
+    }
+  });
+}
+
+load();
+populateBulkMonths();
+selectedMonth = currentMonthStr();
+document.getElementById('monthPicker').value = selectedMonth;
+render();
+renderSummary();
+</script>
+</body>
+</html>
